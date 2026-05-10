@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 
 public class BoardManager : MonoBehaviour
@@ -25,22 +24,35 @@ public class BoardManager : MonoBehaviour
 
     private Color[] fruitColors =
     {
-        new Color(1f, 0.1f, 0.1f, 1f),      // Apple
-        new Color(1f, 0.75f, 0.1f, 1f),     // Pineapple
-        new Color(1f, 0.25f, 0.35f, 1f),    // Strawberry
-        new Color(0.2f, 0.05f, 0.3f, 1f),   // Blackberry
-        new Color(1f, 0.9f, 0.1f, 1f),      // Banana
-        new Color(1f, 0.5f, 0.05f, 1f),     // Mango
-        new Color(0.4f, 0.9f, 0.2f, 1f)     // Kiwi
+        new Color(1f, 0.1f, 0.1f, 1f),
+        new Color(1f, 0.75f, 0.1f, 1f),
+        new Color(1f, 0.25f, 0.35f, 1f),
+        new Color(0.2f, 0.05f, 0.3f, 1f),
+        new Color(1f, 0.9f, 0.1f, 1f),
+        new Color(1f, 0.5f, 0.05f, 1f),
+        new Color(0.4f, 0.9f, 0.2f, 1f)
     };
 
-    private void Start()
+    void Start()
     {
         CreateBoard();
         UpdateScoreText();
     }
 
-    private void CreateBoard()
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            FillRandomRowForTesting();
+        }
+
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            FillRandomColumnForTesting();
+        }
+    }
+
+    void CreateBoard()
     {
         grid = new GridCell[rows, columns];
 
@@ -70,23 +82,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        // Temporary testing controls.
-        // Press SPACE to fill a random row and see the fruit blast effect.
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            FillRandomRowForTesting();
-        }
-
-        // Press C to fill a random column and see the fruit blast effect.
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            FillRandomColumnForTesting();
-        }
-    }
-
-    private void FillRandomRowForTesting()
+    void FillRandomRowForTesting()
     {
         if (isClearing) return;
 
@@ -101,7 +97,7 @@ public class BoardManager : MonoBehaviour
         CheckCompletedLines();
     }
 
-    private void FillRandomColumnForTesting()
+    void FillRandomColumnForTesting()
     {
         if (isClearing) return;
 
@@ -116,7 +112,7 @@ public class BoardManager : MonoBehaviour
         CheckCompletedLines();
     }
 
-    private void CheckCompletedLines()
+    void CheckCompletedLines()
     {
         List<GridCell> completedCells = new List<GridCell>();
 
@@ -176,7 +172,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    private IEnumerator FruitClearEffect(List<GridCell> completedCells)
+    IEnumerator FruitClearEffect(List<GridCell> completedCells)
     {
         isClearing = true;
 
@@ -205,17 +201,100 @@ public class BoardManager : MonoBehaviour
         isClearing = false;
     }
 
-    private void AddScore(int amount)
+    void AddScore(int amount)
     {
         score += amount;
         UpdateScoreText();
     }
 
-    private void UpdateScoreText()
+    void UpdateScoreText()
     {
         if (scoreText != null)
         {
             scoreText.text = "Score: " + score;
         }
     }
+    public bool TryPlaceShape(List<Vector2Int> shapeCells, Vector2 screenPosition)
+{
+    if (isClearing)
+    {
+        return false;
+    }
+
+    GridCell closestCell = GetClosestCell(screenPosition);
+
+    if (closestCell == null)
+    {
+        return false;
+    }
+
+    int startRow = closestCell.row;
+    int startColumn = closestCell.column;
+
+    if (!CanPlaceShape(shapeCells, startRow, startColumn))
+    {
+        return false;
+    }
+
+    foreach (Vector2Int part in shapeCells)
+    {
+        int r = startRow + part.y;
+        int c = startColumn + part.x;
+
+        grid[r, c].SetBlock(normalBlockColor);
+    }
+
+    AddScore(shapeCells.Count * 10);
+    CheckCompletedLines();
+
+    return true;
+}
+
+public bool CanPlaceShape(List<Vector2Int> shapeCells, int startRow, int startColumn)
+{
+    foreach (Vector2Int part in shapeCells)
+    {
+        int r = startRow + part.y;
+        int c = startColumn + part.x;
+
+        if (r < 0 || r >= rows || c < 0 || c >= columns)
+        {
+            return false;
+        }
+
+        if (grid[r, c].isOccupied)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+private GridCell GetClosestCell(Vector2 screenPosition)
+{
+    GridCell closestCell = null;
+    float closestDistance = float.MaxValue;
+
+    foreach (GridCell cell in grid)
+    {
+        RectTransform cellRect = cell.GetComponent<RectTransform>();
+        Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(null, cellRect.position);
+
+        float distance = Vector2.Distance(screenPosition, cellScreenPosition);
+
+        if (distance < closestDistance)
+        {
+            closestDistance = distance;
+            closestCell = cell;
+        }
+    }
+
+    if (closestDistance > 60f)
+    {
+        return null;
+    }
+
+    return closestCell;
+}
 }
