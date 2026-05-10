@@ -24,23 +24,27 @@ public class GridCell : MonoBehaviour
         ClearCell();
     }
 
-    public void SetBlock(Color blockColor)
+    public void SetBlock(Sprite blockSprite)
     {
         isOccupied = true;
 
         if (cellImage != null)
         {
-            cellImage.color = blockColor;
+            cellImage.sprite = blockSprite;
+            cellImage.color = Color.white;
+            cellImage.preserveAspect = true;
         }
 
         transform.localScale = Vector3.one;
     }
 
-    public void SetFruitColor(Color fruitColor)
+    public void SetFruitSprite(Sprite fruitSprite)
     {
         if (cellImage != null)
         {
-            cellImage.color = fruitColor;
+            cellImage.sprite = fruitSprite;
+            cellImage.color = Color.white;
+            cellImage.preserveAspect = true;
         }
 
         transform.localScale = Vector3.one * 1.15f;
@@ -52,7 +56,8 @@ public class GridCell : MonoBehaviour
 
         if (cellImage != null)
         {
-            cellImage.color = new Color(1f, 1f, 1f, 0.25f);
+            cellImage.sprite = null;
+            cellImage.color = new Color(1f, 1f, 1f, 0.18f);
         }
 
         transform.localScale = Vector3.one;

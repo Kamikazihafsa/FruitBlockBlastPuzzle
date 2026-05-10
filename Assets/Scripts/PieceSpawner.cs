@@ -8,20 +8,13 @@ public class PieceSpawner : MonoBehaviour
     public GameObject blockPiecePrefab;
     public GameObject miniBlockPrefab;
 
+    [Header("Fruit Sprites")]
+    public Sprite[] fruitSprites;
+
     [Header("Settings")]
     public int piecesPerRound = 3;
 
     private List<BlockPiece> activePieces = new List<BlockPiece>();
-
-    private Color[] pieceColors =
-    {
-        new Color(0.95f, 0.2f, 0.2f, 1f),
-        new Color(1f, 0.55f, 0.1f, 1f),
-        new Color(1f, 0.85f, 0.1f, 1f),
-        new Color(0.35f, 0.85f, 0.25f, 1f),
-        new Color(0.2f, 0.65f, 1f, 1f),
-        new Color(0.65f, 0.3f, 0.85f, 1f)
-    };
 
     private List<List<Vector2Int>> shapes = new List<List<Vector2Int>>
     {
@@ -63,9 +56,9 @@ public class PieceSpawner : MonoBehaviour
             BlockPiece blockPiece = pieceObj.GetComponent<BlockPiece>();
 
             List<Vector2Int> randomShape = shapes[Random.Range(0, shapes.Count)];
-            Color randomColor = pieceColors[Random.Range(0, pieceColors.Length)];
+            Sprite randomFruit = fruitSprites[Random.Range(0, fruitSprites.Length)];
 
-            blockPiece.Setup(randomShape, miniBlockPrefab, randomColor);
+            blockPiece.Setup(randomShape, miniBlockPrefab, randomFruit);
 
             activePieces.Add(blockPiece);
         }

@@ -11,13 +11,14 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     [Header("Visual Settings")]
     public GameObject miniBlockPrefab;
     public float miniBlockSize = 45f;
-    public Color pieceColor = new Color(0.2f, 0.75f, 0.35f, 1f);
+    public Sprite pieceSprite;
 
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private Vector2 originalPosition;
     private BoardManager boardManager;
     private PieceSpawner pieceSpawner;
+
     private void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
@@ -32,11 +33,11 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         pieceSpawner = FindFirstObjectByType<PieceSpawner>();
     }
 
-    public void Setup(List<Vector2Int> newShape, GameObject blockPrefab, Color color)
+    public void Setup(List<Vector2Int> newShape, GameObject blockPrefab, Sprite sprite)
     {
         shapeCells = new List<Vector2Int>(newShape);
         miniBlockPrefab = blockPrefab;
-        pieceColor = color;
+        pieceSprite = sprite;
 
         BuildVisualShape();
     }
@@ -59,7 +60,9 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             Image img = block.GetComponent<Image>();
             if (img != null)
             {
-                img.color = pieceColor;
+                img.sprite = pieceSprite;
+                img.color = Color.white;
+                img.preserveAspect = true;
             }
         }
     }
@@ -80,7 +83,7 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     {
         canvasGroup.blocksRaycasts = true;
 
-        bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position);
+        bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position, pieceSprite);
 
         if (placed)
         {
