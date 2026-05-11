@@ -56,7 +56,7 @@ public class PieceSpawner : MonoBehaviour
             BlockPiece blockPiece = pieceObj.GetComponent<BlockPiece>();
 
             List<Vector2Int> randomShape = shapes[Random.Range(0, shapes.Count)];
-            Sprite randomFruit = fruitSprites[Random.Range(0, fruitSprites.Length)];
+            Sprite randomFruit = fruitSprites[i % fruitSprites.Length];
 
             blockPiece.Setup(randomShape, miniBlockPrefab, randomFruit);
 
