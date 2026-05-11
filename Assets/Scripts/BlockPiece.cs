@@ -13,16 +13,13 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     public float miniBlockSize = 45f;
     public Sprite pieceSprite;
 
-    [Header("Drag Settings")]
-    public float dragLiftOffset = 35f;
-
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private Vector2 originalPosition;
     private BoardManager boardManager;
     private PieceSpawner pieceSpawner;
 
-    private Transform placementAnchorBlock;
+    private Image parentImage;
 
     private void Awake()
     {
@@ -34,13 +31,13 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
-        Image parentImage = GetComponent<Image>();
+        parentImage = GetComponent<Image>();
         if (parentImage == null)
         {
             parentImage = gameObject.AddComponent<Image>();
         }
 
-        // Keep the object clickable, but remove visible background.
+        // Invisible clickable area.
         parentImage.sprite = null;
         parentImage.color = new Color(1f, 1f, 1f, 0f);
         parentImage.raycastTarget = true;
@@ -91,8 +88,6 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             Destroy(child.gameObject);
         }
 
-        placementAnchorBlock = null;
-
         if (shapeCells == null || shapeCells.Count == 0)
         {
             return;
@@ -120,7 +115,6 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             RectTransform blockRect = block.GetComponent<RectTransform>();
             blockRect.sizeDelta = new Vector2(miniBlockSize, miniBlockSize);
 
-            // Center the full shape inside the parent.
             float x = (cell.x * miniBlockSize) - (pieceWidth / 2f) + (miniBlockSize / 2f);
             float y = -(cell.y * miniBlockSize) + (pieceHeight / 2f) - (miniBlockSize / 2f);
 
@@ -135,17 +129,6 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
                 img.preserveAspect = true;
                 img.raycastTarget = false;
             }
-
-            // Use the first cell as the drop reference.
-            if (cell.x == 0 && cell.y == 0)
-            {
-                placementAnchorBlock = block.transform;
-            }
-        }
-
-        if (placementAnchorBlock == null && transform.childCount > 0)
-        {
-            placementAnchorBlock = transform.GetChild(0);
         }
     }
 
@@ -158,7 +141,8 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
     public void OnDrag(PointerEventData eventData)
     {
-        rectTransform.position = eventData.position + new Vector2(0f, dragLiftOffset);
+        // Let the fruit follow the mouse exactly.
+        rectTransform.position = eventData.position;
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -171,18 +155,8 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             return;
         }
 
-        Vector2 dropPosition;
-
-        if (placementAnchorBlock != null)
-        {
-            dropPosition = RectTransformUtility.WorldToScreenPoint(null, placementAnchorBlock.position);
-        }
-        else
-        {
-            dropPosition = eventData.position;
-        }
-
-        bool placed = boardManager.TryPlaceShape(shapeCells, dropPosition, pieceSprite);
+        // Use the mouse release point directly.
+        bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position, pieceSprite);
 
         if (placed)
         {
