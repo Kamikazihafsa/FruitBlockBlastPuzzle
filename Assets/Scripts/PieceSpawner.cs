@@ -19,59 +19,52 @@ public class PieceSpawner : MonoBehaviour
 
     private List<List<Vector2Int>> shapes = new List<List<Vector2Int>>
     {
-        // Single block
-        new List<Vector2Int> 
-        { 
-            new Vector2Int(0, 0) 
+        new List<Vector2Int>
+        {
+            new Vector2Int(0, 0)
         },
 
-        // Two horizontal
-        new List<Vector2Int> 
-        { 
-            new Vector2Int(0, 0), 
-            new Vector2Int(1, 0) 
+        new List<Vector2Int>
+        {
+            new Vector2Int(0, 0),
+            new Vector2Int(1, 0)
         },
 
-        // Three horizontal
-        new List<Vector2Int> 
-        { 
-            new Vector2Int(0, 0), 
-            new Vector2Int(1, 0), 
-            new Vector2Int(2, 0) 
-        },
-
-        // Three vertical
-        new List<Vector2Int> 
-        { 
-            new Vector2Int(0, 0), 
-            new Vector2Int(0, 1), 
-            new Vector2Int(0, 2) 
-        },
-
-        // Square 2x2
-        new List<Vector2Int> 
-        { 
-            new Vector2Int(0, 0), 
+        new List<Vector2Int>
+        {
+            new Vector2Int(0, 0),
             new Vector2Int(1, 0),
-            new Vector2Int(0, 1), 
-            new Vector2Int(1, 1) 
+            new Vector2Int(2, 0)
         },
 
-        // Small L shape
-        new List<Vector2Int> 
-        { 
-            new Vector2Int(0, 0), 
-            new Vector2Int(0, 1), 
-            new Vector2Int(1, 1) 
+        new List<Vector2Int>
+        {
+            new Vector2Int(0, 0),
+            new Vector2Int(0, 1),
+            new Vector2Int(0, 2)
         },
 
-        // T shape
-        new List<Vector2Int> 
-        { 
-            new Vector2Int(0, 0), 
+        new List<Vector2Int>
+        {
+            new Vector2Int(0, 0),
             new Vector2Int(1, 0),
-            new Vector2Int(2, 0), 
-            new Vector2Int(1, 1) 
+            new Vector2Int(0, 1),
+            new Vector2Int(1, 1)
+        },
+
+        new List<Vector2Int>
+        {
+            new Vector2Int(0, 0),
+            new Vector2Int(0, 1),
+            new Vector2Int(1, 1)
+        },
+
+        new List<Vector2Int>
+        {
+            new Vector2Int(0, 0),
+            new Vector2Int(1, 0),
+            new Vector2Int(2, 0),
+            new Vector2Int(1, 1)
         }
     };
 
@@ -85,6 +78,12 @@ public class PieceSpawner : MonoBehaviour
     {
         ClearOldPieces();
 
+        if (piecePanel == null || blockPiecePrefab == null || miniBlockPrefab == null)
+        {
+            Debug.LogError("PieceSpawner references are missing. Assign PiecePanel, BlockPiecePrefab, and MiniBlockPrefab.");
+            return;
+        }
+
         for (int i = 0; i < piecesPerRound; i++)
         {
             GameObject pieceObj = Instantiate(blockPiecePrefab, piecePanel);
@@ -96,17 +95,22 @@ public class PieceSpawner : MonoBehaviour
 
             BlockPiece blockPiece = pieceObj.GetComponent<BlockPiece>();
 
+            if (blockPiece == null)
+            {
+                Debug.LogError("BlockPiecePrefab is missing the BlockPiece script.");
+                continue;
+            }
+
             List<Vector2Int> randomShape = shapes[Random.Range(0, shapes.Count)];
 
-            Sprite fruitSprite = null;
+            Sprite selectedFruit = null;
 
             if (fruitSprites != null && fruitSprites.Length > 0)
             {
-                fruitSprite = fruitSprites[i % fruitSprites.Length];
+                selectedFruit = fruitSprites[i % fruitSprites.Length];
             }
 
-            blockPiece.Setup(randomShape, miniBlockPrefab, fruitSprite);
-
+            blockPiece.Setup(randomShape, miniBlockPrefab, selectedFruit);
             activePieces.Add(blockPiece);
         }
 

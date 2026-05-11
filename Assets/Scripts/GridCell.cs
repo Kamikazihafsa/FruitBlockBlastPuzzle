@@ -57,7 +57,7 @@ public class GridCell : MonoBehaviour
         if (cellImage != null)
         {
             cellImage.sprite = null;
-            cellImage.color = new Color(1f, 1f, 1f, 0.18f);
+            cellImage.color = new Color(1f, 1f, 1f, 0.25f);
         }
 
         transform.localScale = Vector3.one;

@@ -58,11 +58,13 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             blockRect.anchoredPosition = new Vector2(cell.x * miniBlockSize, -cell.y * miniBlockSize);
 
             Image img = block.GetComponent<Image>();
+
             if (img != null)
             {
                 img.sprite = pieceSprite;
                 img.color = Color.white;
                 img.preserveAspect = true;
+                img.raycastTarget = false;
             }
         }
     }
@@ -83,11 +85,21 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     {
         canvasGroup.blocksRaycasts = true;
 
+        if (boardManager == null)
+        {
+            rectTransform.anchoredPosition = originalPosition;
+            return;
+        }
+
         bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position, pieceSprite);
 
         if (placed)
         {
-            pieceSpawner.RemovePiece(this);
+            if (pieceSpawner != null)
+            {
+                pieceSpawner.RemovePiece(this);
+            }
+
             Destroy(gameObject);
         }
         else
