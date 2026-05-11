@@ -91,7 +91,7 @@ public class PieceSpawner : MonoBehaviour
 
             RectTransform rect = pieceObj.GetComponent<RectTransform>();
             rect.sizeDelta = new Vector2(160, 140);
-            rect.anchoredPosition = new Vector2(-250 + (i * 250), 10);
+            rect.anchoredPosition = new Vector2(-300 + (i * 300), 20);
 
             BlockPiece blockPiece = pieceObj.GetComponent<BlockPiece>();
 
