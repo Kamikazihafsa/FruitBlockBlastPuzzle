@@ -5,6 +5,9 @@ using TMPro;
 
 public class BoardManager : MonoBehaviour
 {
+    [Header("Game Over UI")]
+    public GameObject gameOverPanel;
+
     [Header("Board Settings")]
     public int rows = 8;
     public int columns = 8;
@@ -242,4 +245,27 @@ public class BoardManager : MonoBehaviour
             scoreText.text = "Score: " + score;
         }
     }
+    public bool CanAnyShapeFit(List<Vector2Int> shapeCells)
+{
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; c < columns; c++)
+        {
+            if (CanPlaceShape(shapeCells, r, c))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+public void ShowGameOver()
+{
+    if (gameOverPanel != null)
+    {
+        gameOverPanel.SetActive(true);
+    }
+}
 }
