@@ -92,30 +92,33 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         rectTransform.position = eventData.position;
     }
 
-    public void OnEndDrag(PointerEventData eventData)
+ public void OnEndDrag(PointerEventData eventData)
+{
+    canvasGroup.blocksRaycasts = true;
+
+    if (boardManager == null)
     {
-        canvasGroup.blocksRaycasts = true;
-
-        if (boardManager == null)
-        {
-            rectTransform.anchoredPosition = originalPosition;
-            return;
-        }
-
-        bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position, pieceSprite);
-
-        if (placed)
-        {
-            if (pieceSpawner != null)
-            {
-                pieceSpawner.RemovePiece(this);
-            }
-
-            Destroy(gameObject);
-        }
-        else
-        {
-            rectTransform.anchoredPosition = originalPosition;
-        }
+        rectTransform.anchoredPosition = originalPosition;
+        return;
     }
+
+    // Use the actual piece position, not only the mouse position.
+    Vector2 pieceScreenPosition = RectTransformUtility.WorldToScreenPoint(null, rectTransform.position);
+
+    bool placed = boardManager.TryPlaceShape(shapeCells, pieceScreenPosition, pieceSprite);
+
+    if (placed)
+    {
+        if (pieceSpawner != null)
+        {
+            pieceSpawner.RemovePiece(this);
+        }
+
+        Destroy(gameObject);
+    }
+    else
+    {
+        rectTransform.anchoredPosition = originalPosition;
+    }
+}
 }

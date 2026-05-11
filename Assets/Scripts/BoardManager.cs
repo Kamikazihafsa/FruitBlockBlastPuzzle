@@ -152,42 +152,43 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    private GridCell GetClosestCell(Vector2 screenPosition)
+private GridCell GetClosestCell(Vector2 screenPosition)
+{
+    if (grid == null)
     {
-        if (grid == null)
-        {
-            return null;
-        }
-
-        GridCell closestCell = null;
-        float closestDistance = float.MaxValue;
-
-        foreach (GridCell cell in grid)
-        {
-            if (cell == null)
-            {
-                continue;
-            }
-
-            RectTransform cellRect = cell.GetComponent<RectTransform>();
-            Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(null, cellRect.position);
-
-            float distance = Vector2.Distance(screenPosition, cellScreenPosition);
-
-            if (distance < closestDistance)
-            {
-                closestDistance = distance;
-                closestCell = cell;
-            }
-        }
-
-        if (closestDistance > 60f)
-        {
-            return null;
-        }
-
-        return closestCell;
+        return null;
     }
+
+    GridCell closestCell = null;
+    float closestDistance = float.MaxValue;
+
+    foreach (GridCell cell in grid)
+    {
+        if (cell == null)
+        {
+            continue;
+        }
+
+        RectTransform cellRect = cell.GetComponent<RectTransform>();
+        Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(null, cellRect.position);
+
+        float distance = Vector2.Distance(screenPosition, cellScreenPosition);
+
+        if (distance < closestDistance)
+        {
+            closestDistance = distance;
+            closestCell = cell;
+        }
+    }
+
+    // Old value was too strict. This allows easier dropping.
+    if (closestDistance > 130f)
+    {
+        return null;
+    }
+
+    return closestCell;
+}
 
     private void CheckCompletedLines()
     {
