@@ -2,12 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class BoardManager : MonoBehaviour
 {
-    [Header("Game Over UI")]
-    public GameObject gameOverPanel;
-
     [Header("Board Settings")]
     public int rows = 8;
     public int columns = 8;
@@ -22,12 +20,21 @@ public class BoardManager : MonoBehaviour
     [Header("Fruit Sprites For Clear Effect")]
     public Sprite[] fruitSprites;
 
+    [Header("Game Over UI")]
+    public GameObject gameOverPanel;
+
     private GridCell[,] grid;
     private int score = 0;
     private bool isClearing = false;
+    private bool isGameOver = false;
 
     private void Start()
     {
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+        }
+
         CreateBoard();
         UpdateScoreText();
     }
@@ -64,11 +71,17 @@ public class BoardManager : MonoBehaviour
 
     public bool TryPlaceShape(List<Vector2Int> shapeCells, Vector2 screenPosition, Sprite blockSprite)
     {
-        if (isClearing) return false;
+        if (isClearing || isGameOver)
+        {
+            return false;
+        }
 
         GridCell closestCell = GetClosestCell(screenPosition);
 
-        if (closestCell == null) return false;
+        if (closestCell == null)
+        {
+            return false;
+        }
 
         int startRow = closestCell.row;
         int startColumn = closestCell.column;
@@ -94,6 +107,11 @@ public class BoardManager : MonoBehaviour
 
     public bool CanPlaceShape(List<Vector2Int> shapeCells, int startRow, int startColumn)
     {
+        if (grid == null || shapeCells == null)
+        {
+            return false;
+        }
+
         foreach (Vector2Int part in shapeCells)
         {
             int r = startRow + part.y;
@@ -104,7 +122,7 @@ public class BoardManager : MonoBehaviour
                 return false;
             }
 
-            if (grid[r, c].isOccupied)
+            if (grid[r, c] == null || grid[r, c].isOccupied)
             {
                 return false;
             }
@@ -113,13 +131,44 @@ public class BoardManager : MonoBehaviour
         return true;
     }
 
+    public bool CanAnyShapeFit(List<Vector2Int> shapeCells)
+    {
+        if (grid == null || shapeCells == null)
+        {
+            return false;
+        }
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < columns; c++)
+            {
+                if (CanPlaceShape(shapeCells, r, c))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private GridCell GetClosestCell(Vector2 screenPosition)
     {
+        if (grid == null)
+        {
+            return null;
+        }
+
         GridCell closestCell = null;
         float closestDistance = float.MaxValue;
 
         foreach (GridCell cell in grid)
         {
+            if (cell == null)
+            {
+                continue;
+            }
+
             RectTransform cellRect = cell.GetComponent<RectTransform>();
             Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(null, cellRect.position);
 
@@ -150,7 +199,7 @@ public class BoardManager : MonoBehaviour
 
             for (int c = 0; c < columns; c++)
             {
-                if (!grid[r, c].isOccupied)
+                if (grid[r, c] == null || !grid[r, c].isOccupied)
                 {
                     fullRow = false;
                     break;
@@ -175,7 +224,7 @@ public class BoardManager : MonoBehaviour
 
             for (int r = 0; r < rows; r++)
             {
-                if (!grid[r, c].isOccupied)
+                if (grid[r, c] == null || !grid[r, c].isOccupied)
                 {
                     fullColumn = false;
                     break;
@@ -219,14 +268,20 @@ public class BoardManager : MonoBehaviour
 
         foreach (GridCell cell in completedCells)
         {
-            cell.transform.localScale = Vector3.one * 1.25f;
+            if (cell != null)
+            {
+                cell.transform.localScale = Vector3.one * 1.25f;
+            }
         }
 
         yield return new WaitForSeconds(0.15f);
 
         foreach (GridCell cell in completedCells)
         {
-            cell.ClearCell();
+            if (cell != null)
+            {
+                cell.ClearCell();
+            }
         }
 
         isClearing = false;
@@ -245,27 +300,24 @@ public class BoardManager : MonoBehaviour
             scoreText.text = "Score: " + score;
         }
     }
-    public bool CanAnyShapeFit(List<Vector2Int> shapeCells)
-{
-    for (int r = 0; r < rows; r++)
+
+    public void ShowGameOver()
     {
-        for (int c = 0; c < columns; c++)
+        if (isGameOver)
         {
-            if (CanPlaceShape(shapeCells, r, c))
-            {
-                return true;
-            }
+            return;
+        }
+
+        isGameOver = true;
+
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
         }
     }
 
-    return false;
-}
-
-public void ShowGameOver()
-{
-    if (gameOverPanel != null)
+    public void RestartGame()
     {
-        gameOverPanel.SetActive(true);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
-}
 }
