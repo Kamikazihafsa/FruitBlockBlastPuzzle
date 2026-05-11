@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class BoardManager : MonoBehaviour
 {
@@ -17,6 +18,11 @@ public class BoardManager : MonoBehaviour
     public GameObject cellPrefab;
     public TextMeshProUGUI scoreText;
 
+    [Header("Score UI")]
+    public TextMeshProUGUI bestScoreText;
+    public TextMeshProUGUI finalScoreText;
+    public TextMeshProUGUI finalBestScoreText;
+
     [Header("Fruit Sprites For Clear Effect")]
     public Sprite[] fruitSprites;
 
@@ -25,11 +31,17 @@ public class BoardManager : MonoBehaviour
 
     private GridCell[,] grid;
     private int score = 0;
+    private int bestScore = 0;
     private bool isClearing = false;
     private bool isGameOver = false;
 
     private void Start()
     {
+        bestScore = PlayerPrefs.GetInt("BestScore", 0);
+
+        ConfigureScoreTextUI();
+        ConfigureGameOverPanelUI();
+
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(false);
@@ -39,8 +51,203 @@ public class BoardManager : MonoBehaviour
         UpdateScoreText();
     }
 
+    private void ConfigureScoreTextUI()
+    {
+        if (scoreText != null)
+        {
+            RectTransform rect = scoreText.GetComponent<RectTransform>();
+
+            if (rect != null)
+            {
+                rect.anchorMin = new Vector2(0.5f, 1f);
+                rect.anchorMax = new Vector2(0.5f, 1f);
+                rect.pivot = new Vector2(0.5f, 1f);
+                rect.anchoredPosition = new Vector2(0f, -25f);
+                rect.sizeDelta = new Vector2(700f, 90f);
+            }
+
+            scoreText.fontSize = 48;
+            scoreText.color = Color.yellow;
+            scoreText.alignment = TextAlignmentOptions.Center;
+            scoreText.textWrappingMode = TextWrappingModes.NoWrap;
+            scoreText.transform.SetAsLastSibling();
+        }
+
+        if (bestScoreText != null)
+        {
+            RectTransform bestRect = bestScoreText.GetComponent<RectTransform>();
+
+            if (bestRect != null)
+            {
+                bestRect.anchorMin = new Vector2(1f, 1f);
+                bestRect.anchorMax = new Vector2(1f, 1f);
+                bestRect.pivot = new Vector2(1f, 1f);
+                bestRect.anchoredPosition = new Vector2(-30f, -30f);
+                bestRect.sizeDelta = new Vector2(350f, 70f);
+            }
+
+            bestScoreText.fontSize = 36;
+            bestScoreText.color = Color.yellow;
+            bestScoreText.alignment = TextAlignmentOptions.Right;
+            bestScoreText.textWrappingMode = TextWrappingModes.NoWrap;
+            bestScoreText.transform.SetAsLastSibling();
+        }
+    }
+
+    private void ConfigureGameOverPanelUI()
+    {
+        if (gameOverPanel == null)
+        {
+            return;
+        }
+
+        RectTransform panelRect = gameOverPanel.GetComponent<RectTransform>();
+
+        if (panelRect != null)
+        {
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(620f, 430f);
+        }
+
+        Image panelImage = gameOverPanel.GetComponent<Image>();
+
+        if (panelImage != null)
+        {
+            panelImage.color = new Color(0.12f, 0.06f, 0.02f, 0.92f);
+            panelImage.raycastTarget = true;
+        }
+
+        Transform gameOverTitle = gameOverPanel.transform.Find("GAME OVER");
+
+        if (gameOverTitle != null)
+        {
+            TextMeshProUGUI titleText = gameOverTitle.GetComponent<TextMeshProUGUI>();
+            RectTransform titleRect = gameOverTitle.GetComponent<RectTransform>();
+
+            if (titleText != null)
+            {
+                titleText.text = "GAME OVER";
+                titleText.fontSize = 58;
+                titleText.color = Color.yellow;
+                titleText.alignment = TextAlignmentOptions.Center;
+                titleText.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+
+            if (titleRect != null)
+            {
+                titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+                titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+                titleRect.pivot = new Vector2(0.5f, 0.5f);
+                titleRect.anchoredPosition = new Vector2(0f, 130f);
+                titleRect.sizeDelta = new Vector2(560f, 80f);
+            }
+        }
+
+        if (finalScoreText != null)
+        {
+            RectTransform finalScoreRect = finalScoreText.GetComponent<RectTransform>();
+
+            finalScoreText.fontSize = 36;
+            finalScoreText.color = Color.white;
+            finalScoreText.alignment = TextAlignmentOptions.Center;
+            finalScoreText.textWrappingMode = TextWrappingModes.NoWrap;
+
+            if (finalScoreRect != null)
+            {
+                finalScoreRect.anchorMin = new Vector2(0.5f, 0.5f);
+                finalScoreRect.anchorMax = new Vector2(0.5f, 0.5f);
+                finalScoreRect.pivot = new Vector2(0.5f, 0.5f);
+                finalScoreRect.anchoredPosition = new Vector2(0f, 45f);
+                finalScoreRect.sizeDelta = new Vector2(560f, 60f);
+            }
+        }
+
+        if (finalBestScoreText != null)
+        {
+            RectTransform finalBestRect = finalBestScoreText.GetComponent<RectTransform>();
+
+            finalBestScoreText.fontSize = 36;
+            finalBestScoreText.color = Color.yellow;
+            finalBestScoreText.alignment = TextAlignmentOptions.Center;
+            finalBestScoreText.textWrappingMode = TextWrappingModes.NoWrap;
+
+            if (finalBestRect != null)
+            {
+                finalBestRect.anchorMin = new Vector2(0.5f, 0.5f);
+                finalBestRect.anchorMax = new Vector2(0.5f, 0.5f);
+                finalBestRect.pivot = new Vector2(0.5f, 0.5f);
+                finalBestRect.anchoredPosition = new Vector2(0f, -20f);
+                finalBestRect.sizeDelta = new Vector2(560f, 60f);
+            }
+        }
+
+        Transform restartButton = gameOverPanel.transform.Find("Restart Game");
+
+        if (restartButton == null)
+        {
+            restartButton = gameOverPanel.transform.Find("Restart");
+        }
+
+        if (restartButton != null)
+        {
+            RectTransform buttonRect = restartButton.GetComponent<RectTransform>();
+
+            if (buttonRect != null)
+            {
+                buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
+                buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
+                buttonRect.pivot = new Vector2(0.5f, 0.5f);
+                buttonRect.anchoredPosition = new Vector2(0f, -120f);
+                buttonRect.sizeDelta = new Vector2(260f, 70f);
+            }
+
+            Image buttonImage = restartButton.GetComponent<Image>();
+
+            if (buttonImage != null)
+            {
+                buttonImage.color = Color.white;
+                buttonImage.raycastTarget = true;
+            }
+
+            Button button = restartButton.GetComponent<Button>();
+
+            if (button == null)
+            {
+                button = restartButton.gameObject.AddComponent<Button>();
+            }
+
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(RestartGame);
+            button.interactable = true;
+
+            TextMeshProUGUI buttonText = restartButton.GetComponentInChildren<TextMeshProUGUI>();
+
+            if (buttonText != null)
+            {
+                buttonText.text = "Restart Game";
+                buttonText.fontSize = 30;
+                buttonText.color = Color.black;
+                buttonText.alignment = TextAlignmentOptions.Center;
+                buttonText.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Restart button was not found. Rename the button to 'Restart Game' or 'Restart'.");
+        }
+    }
+
     private void CreateBoard()
     {
+        if (boardParent == null || cellPrefab == null)
+        {
+            Debug.LogError("BoardManager is missing Board Parent or Cell Prefab.");
+            return;
+        }
+
         grid = new GridCell[rows, columns];
 
         float boardWidth = columns * cellSize + (columns - 1) * spacing;
@@ -62,66 +269,95 @@ public class BoardManager : MonoBehaviour
                 rect.anchoredPosition = new Vector2(x, y);
 
                 GridCell cell = newCell.GetComponent<GridCell>();
-                cell.Setup(r, c);
 
+                if (cell == null)
+                {
+                    Debug.LogError("CellPrefab is missing GridCell script.");
+                    continue;
+                }
+
+                cell.Setup(r, c);
                 grid[r, c] = cell;
             }
         }
     }
 
+    public bool IsBoardReady()
+    {
+        return grid != null;
+    }
+
     public bool TryPlaceShape(List<Vector2Int> shapeCells, Vector2 screenPosition, Sprite blockSprite)
-{
-    if (isClearing || isGameOver)
     {
-        return false;
+        if (isClearing || isGameOver)
+        {
+            Debug.Log("Cannot place: clearing or game over.");
+            return false;
+        }
+
+        if (grid == null || shapeCells == null)
+        {
+            Debug.Log("Cannot place: grid or shape is null.");
+            return false;
+        }
+
+        GridCell closestCell = null;
+        float closestDistance = float.MaxValue;
+
+        foreach (GridCell cell in grid)
+        {
+            if (cell == null)
+            {
+                continue;
+            }
+
+            RectTransform cellRect = cell.GetComponent<RectTransform>();
+            Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(null, cellRect.position);
+
+            float distance = Vector2.Distance(screenPosition, cellScreenPosition);
+
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestCell = cell;
+            }
+        }
+
+        if (closestCell == null)
+        {
+            Debug.Log("Cannot place: no closest cell found.");
+            return false;
+        }
+
+        if (closestDistance > 200f)
+        {
+            Debug.Log("Cannot place: too far from board. Distance = " + closestDistance);
+            return false;
+        }
+
+        int startRow = closestCell.row;
+        int startColumn = closestCell.column;
+
+        if (!CanPlaceShape(shapeCells, startRow, startColumn))
+        {
+            Debug.Log("Cannot place: shape does not fit at row " + startRow + ", col " + startColumn);
+            return false;
+        }
+
+        foreach (Vector2Int part in shapeCells)
+        {
+            int r = startRow + part.y;
+            int c = startColumn + part.x;
+
+            grid[r, c].SetBlock(blockSprite);
+        }
+
+        AddScore(shapeCells.Count * 10);
+        CheckCompletedLines();
+
+        Debug.Log("Placed successfully.");
+        return true;
     }
-
-    if (grid == null || boardParent == null || shapeCells == null)
-    {
-        return false;
-    }
-
-    Vector2 localPoint;
-
-    bool insideBoard = RectTransformUtility.ScreenPointToLocalPointInRectangle(
-        boardParent,
-        screenPosition,
-        null,
-        out localPoint
-    );
-
-    if (!insideBoard)
-    {
-        return false;
-    }
-
-    float boardWidth = columns * cellSize + (columns - 1) * spacing;
-    float boardHeight = rows * cellSize + (rows - 1) * spacing;
-
-    float xFromLeft = localPoint.x + boardWidth / 2f;
-    float yFromTop = boardHeight / 2f - localPoint.y;
-
-    int startColumn = Mathf.FloorToInt(xFromLeft / (cellSize + spacing));
-    int startRow = Mathf.FloorToInt(yFromTop / (cellSize + spacing));
-
-    if (!CanPlaceShape(shapeCells, startRow, startColumn))
-    {
-        return false;
-    }
-
-    foreach (Vector2Int part in shapeCells)
-    {
-        int r = startRow + part.y;
-        int c = startColumn + part.x;
-
-        grid[r, c].SetBlock(blockSprite);
-    }
-
-    AddScore(shapeCells.Count * 10);
-    CheckCompletedLines();
-
-    return true;
-}
 
     public bool CanPlaceShape(List<Vector2Int> shapeCells, int startRow, int startColumn)
     {
@@ -153,7 +389,7 @@ public class BoardManager : MonoBehaviour
     {
         if (grid == null || shapeCells == null)
         {
-            return false;
+            return true;
         }
 
         for (int r = 0; r < rows; r++)
@@ -169,44 +405,6 @@ public class BoardManager : MonoBehaviour
 
         return false;
     }
-
-private GridCell GetClosestCell(Vector2 screenPosition)
-{
-    if (grid == null)
-    {
-        return null;
-    }
-
-    GridCell closestCell = null;
-    float closestDistance = float.MaxValue;
-
-    foreach (GridCell cell in grid)
-    {
-        if (cell == null)
-        {
-            continue;
-        }
-
-        RectTransform cellRect = cell.GetComponent<RectTransform>();
-        Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(null, cellRect.position);
-
-        float distance = Vector2.Distance(screenPosition, cellScreenPosition);
-
-        if (distance < closestDistance)
-        {
-            closestDistance = distance;
-            closestCell = cell;
-        }
-    }
-
-    // Old value was too strict. This allows easier dropping.
-    if (closestDistance > 130f)
-    {
-        return null;
-    }
-
-    return closestCell;
-}
 
     private void CheckCompletedLines()
     {
@@ -276,8 +474,11 @@ private GridCell GetClosestCell(Vector2 screenPosition)
         {
             foreach (GridCell cell in completedCells)
             {
-                Sprite randomFruit = fruitSprites[Random.Range(0, fruitSprites.Length)];
-                cell.SetFruitSprite(randomFruit);
+                if (cell != null)
+                {
+                    Sprite randomFruit = fruitSprites[Random.Range(0, fruitSprites.Length)];
+                    cell.SetFruitSprite(randomFruit);
+                }
             }
         }
 
@@ -310,13 +511,29 @@ private GridCell GetClosestCell(Vector2 screenPosition)
     {
         score += amount;
         UpdateScoreText();
+
+        Debug.Log("Score increased by " + amount + ". Total Score: " + score);
     }
 
     private void UpdateScoreText()
     {
+        if (score > bestScore)
+        {
+            bestScore = score;
+            PlayerPrefs.SetInt("BestScore", bestScore);
+            PlayerPrefs.Save();
+        }
+
         if (scoreText != null)
         {
             scoreText.text = "Score: " + score;
+            scoreText.transform.SetAsLastSibling();
+        }
+
+        if (bestScoreText != null)
+        {
+            bestScoreText.text = "Best: " + bestScore;
+            bestScoreText.transform.SetAsLastSibling();
         }
     }
 
@@ -329,14 +546,63 @@ private GridCell GetClosestCell(Vector2 screenPosition)
 
         isGameOver = true;
 
+        if (score > bestScore)
+        {
+            bestScore = score;
+            PlayerPrefs.SetInt("BestScore", bestScore);
+            PlayerPrefs.Save();
+        }
+
+        if (finalScoreText != null)
+        {
+            finalScoreText.text = "Final Score: " + score;
+        }
+
+        if (finalBestScoreText != null)
+        {
+            finalBestScoreText.text = "Best Score: " + bestScore;
+        }
+
         if (gameOverPanel != null)
         {
+            ConfigureGameOverPanelUI();
+
             gameOverPanel.SetActive(true);
+            gameOverPanel.transform.SetAsLastSibling();
+        }
+        else
+        {
+            Debug.LogWarning("GameOverPanel is not assigned in BoardManager.");
+        }
+
+        if (scoreText != null)
+        {
+            scoreText.transform.SetAsLastSibling();
+        }
+
+        if (bestScoreText != null)
+        {
+            bestScoreText.transform.SetAsLastSibling();
         }
     }
 
     public void RestartGame()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        Time.timeScale = 1f;
+
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+        }
+
+        Scene currentScene = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(currentScene.name);
+    }
+
+    public void ResetBestScore()
+    {
+        PlayerPrefs.DeleteKey("BestScore");
+        bestScore = 0;
+        UpdateScoreText();
     }
 }

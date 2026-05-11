@@ -13,11 +13,16 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     public float miniBlockSize = 45f;
     public Sprite pieceSprite;
 
+    [Header("Drag Settings")]
+    public float dragLiftOffset = 35f;
+
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private Vector2 originalPosition;
     private BoardManager boardManager;
     private PieceSpawner pieceSpawner;
+
+    private Transform placementAnchorBlock;
 
     private void Awake()
     {
@@ -35,8 +40,9 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             parentImage = gameObject.AddComponent<Image>();
         }
 
-        // Keep it clickable but almost invisible.
-        parentImage.color = new Color(1f, 1f, 1f, 0.01f);
+        // Keep the object clickable, but remove visible background.
+        parentImage.sprite = null;
+        parentImage.color = new Color(1f, 1f, 1f, 0f);
         parentImage.raycastTarget = true;
 
         boardManager = FindFirstObjectByType<BoardManager>();
@@ -45,11 +51,37 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
     public void Setup(List<Vector2Int> newShape, GameObject blockPrefab, Sprite sprite)
     {
-        shapeCells = new List<Vector2Int>(newShape);
+        shapeCells = NormalizeShape(newShape);
         miniBlockPrefab = blockPrefab;
         pieceSprite = sprite;
 
         BuildVisualShape();
+    }
+
+    private List<Vector2Int> NormalizeShape(List<Vector2Int> originalShape)
+    {
+        List<Vector2Int> normalized = new List<Vector2Int>();
+
+        if (originalShape == null || originalShape.Count == 0)
+        {
+            return normalized;
+        }
+
+        int minX = originalShape[0].x;
+        int minY = originalShape[0].y;
+
+        foreach (Vector2Int cell in originalShape)
+        {
+            if (cell.x < minX) minX = cell.x;
+            if (cell.y < minY) minY = cell.y;
+        }
+
+        foreach (Vector2Int cell in originalShape)
+        {
+            normalized.Add(new Vector2Int(cell.x - minX, cell.y - minY));
+        }
+
+        return normalized;
     }
 
     private void BuildVisualShape()
@@ -59,24 +91,61 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             Destroy(child.gameObject);
         }
 
+        placementAnchorBlock = null;
+
+        if (shapeCells == null || shapeCells.Count == 0)
+        {
+            return;
+        }
+
+        int maxX = 0;
+        int maxY = 0;
+
+        foreach (Vector2Int cell in shapeCells)
+        {
+            if (cell.x > maxX) maxX = cell.x;
+            if (cell.y > maxY) maxY = cell.y;
+        }
+
+        float pieceWidth = (maxX + 1) * miniBlockSize;
+        float pieceHeight = (maxY + 1) * miniBlockSize;
+
+        rectTransform.sizeDelta = new Vector2(pieceWidth, pieceHeight);
+
         foreach (Vector2Int cell in shapeCells)
         {
             GameObject block = Instantiate(miniBlockPrefab, transform);
-            RectTransform blockRect = block.GetComponent<RectTransform>();
+            block.name = "MiniBlock_" + cell.x + "_" + cell.y;
 
+            RectTransform blockRect = block.GetComponent<RectTransform>();
             blockRect.sizeDelta = new Vector2(miniBlockSize, miniBlockSize);
-            blockRect.anchoredPosition = new Vector2(cell.x * miniBlockSize, -cell.y * miniBlockSize);
+
+            // Center the full shape inside the parent.
+            float x = (cell.x * miniBlockSize) - (pieceWidth / 2f) + (miniBlockSize / 2f);
+            float y = -(cell.y * miniBlockSize) + (pieceHeight / 2f) - (miniBlockSize / 2f);
+
+            blockRect.anchoredPosition = new Vector2(x, y);
 
             Image img = block.GetComponent<Image>();
+
             if (img != null)
             {
                 img.sprite = pieceSprite;
                 img.color = Color.white;
                 img.preserveAspect = true;
-
-                // Important: mini blocks should not block the parent drag.
                 img.raycastTarget = false;
             }
+
+            // Use the first cell as the drop reference.
+            if (cell.x == 0 && cell.y == 0)
+            {
+                placementAnchorBlock = block.transform;
+            }
+        }
+
+        if (placementAnchorBlock == null && transform.childCount > 0)
+        {
+            placementAnchorBlock = transform.GetChild(0);
         }
     }
 
@@ -89,33 +158,44 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
     public void OnDrag(PointerEventData eventData)
     {
-        rectTransform.position = eventData.position;
+        rectTransform.position = eventData.position + new Vector2(0f, dragLiftOffset);
     }
 
-public void OnEndDrag(PointerEventData eventData)
-{
-    canvasGroup.blocksRaycasts = true;
-
-    if (boardManager == null)
+    public void OnEndDrag(PointerEventData eventData)
     {
-        rectTransform.anchoredPosition = originalPosition;
-        return;
-    }
+        canvasGroup.blocksRaycasts = true;
 
-    bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position, pieceSprite);
-
-    if (placed)
-    {
-        if (pieceSpawner != null)
+        if (boardManager == null)
         {
-            pieceSpawner.RemovePiece(this);
+            rectTransform.anchoredPosition = originalPosition;
+            return;
         }
 
-        Destroy(gameObject);
+        Vector2 dropPosition;
+
+        if (placementAnchorBlock != null)
+        {
+            dropPosition = RectTransformUtility.WorldToScreenPoint(null, placementAnchorBlock.position);
+        }
+        else
+        {
+            dropPosition = eventData.position;
+        }
+
+        bool placed = boardManager.TryPlaceShape(shapeCells, dropPosition, pieceSprite);
+
+        if (placed)
+        {
+            if (pieceSpawner != null)
+            {
+                pieceSpawner.RemovePiece(this);
+            }
+
+            Destroy(gameObject);
+        }
+        else
+        {
+            rectTransform.anchoredPosition = originalPosition;
+        }
     }
-    else
-    {
-        rectTransform.anchoredPosition = originalPosition;
-    }
-}
 }
