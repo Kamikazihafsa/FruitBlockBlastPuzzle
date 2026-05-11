@@ -22,12 +22,22 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     private void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
-        canvasGroup = GetComponent<CanvasGroup>();
 
+        canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null)
         {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
+
+        Image parentImage = GetComponent<Image>();
+        if (parentImage == null)
+        {
+            parentImage = gameObject.AddComponent<Image>();
+        }
+
+        // Keep it clickable but almost invisible.
+        parentImage.color = new Color(1f, 1f, 1f, 0.01f);
+        parentImage.raycastTarget = true;
 
         boardManager = FindFirstObjectByType<BoardManager>();
         pieceSpawner = FindFirstObjectByType<PieceSpawner>();
@@ -58,12 +68,13 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             blockRect.anchoredPosition = new Vector2(cell.x * miniBlockSize, -cell.y * miniBlockSize);
 
             Image img = block.GetComponent<Image>();
-
             if (img != null)
             {
                 img.sprite = pieceSprite;
                 img.color = Color.white;
                 img.preserveAspect = true;
+
+                // Important: mini blocks should not block the parent drag.
                 img.raycastTarget = false;
             }
         }
