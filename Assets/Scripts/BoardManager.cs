@@ -70,40 +70,58 @@ public class BoardManager : MonoBehaviour
     }
 
     public bool TryPlaceShape(List<Vector2Int> shapeCells, Vector2 screenPosition, Sprite blockSprite)
+{
+    if (isClearing || isGameOver)
     {
-        if (isClearing || isGameOver)
-        {
-            return false;
-        }
-
-        GridCell closestCell = GetClosestCell(screenPosition);
-
-        if (closestCell == null)
-        {
-            return false;
-        }
-
-        int startRow = closestCell.row;
-        int startColumn = closestCell.column;
-
-        if (!CanPlaceShape(shapeCells, startRow, startColumn))
-        {
-            return false;
-        }
-
-        foreach (Vector2Int part in shapeCells)
-        {
-            int r = startRow + part.y;
-            int c = startColumn + part.x;
-
-            grid[r, c].SetBlock(blockSprite);
-        }
-
-        AddScore(shapeCells.Count * 10);
-        CheckCompletedLines();
-
-        return true;
+        return false;
     }
+
+    if (grid == null || boardParent == null || shapeCells == null)
+    {
+        return false;
+    }
+
+    Vector2 localPoint;
+
+    bool insideBoard = RectTransformUtility.ScreenPointToLocalPointInRectangle(
+        boardParent,
+        screenPosition,
+        null,
+        out localPoint
+    );
+
+    if (!insideBoard)
+    {
+        return false;
+    }
+
+    float boardWidth = columns * cellSize + (columns - 1) * spacing;
+    float boardHeight = rows * cellSize + (rows - 1) * spacing;
+
+    float xFromLeft = localPoint.x + boardWidth / 2f;
+    float yFromTop = boardHeight / 2f - localPoint.y;
+
+    int startColumn = Mathf.FloorToInt(xFromLeft / (cellSize + spacing));
+    int startRow = Mathf.FloorToInt(yFromTop / (cellSize + spacing));
+
+    if (!CanPlaceShape(shapeCells, startRow, startColumn))
+    {
+        return false;
+    }
+
+    foreach (Vector2Int part in shapeCells)
+    {
+        int r = startRow + part.y;
+        int c = startColumn + part.x;
+
+        grid[r, c].SetBlock(blockSprite);
+    }
+
+    AddScore(shapeCells.Count * 10);
+    CheckCompletedLines();
+
+    return true;
+}
 
     public bool CanPlaceShape(List<Vector2Int> shapeCells, int startRow, int startColumn)
     {

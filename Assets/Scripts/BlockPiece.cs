@@ -92,7 +92,7 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         rectTransform.position = eventData.position;
     }
 
- public void OnEndDrag(PointerEventData eventData)
+public void OnEndDrag(PointerEventData eventData)
 {
     canvasGroup.blocksRaycasts = true;
 
@@ -102,10 +102,7 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         return;
     }
 
-    // Use the actual piece position, not only the mouse position.
-    Vector2 pieceScreenPosition = RectTransformUtility.WorldToScreenPoint(null, rectTransform.position);
-
-    bool placed = boardManager.TryPlaceShape(shapeCells, pieceScreenPosition, pieceSprite);
+    bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position, pieceSprite);
 
     if (placed)
     {
