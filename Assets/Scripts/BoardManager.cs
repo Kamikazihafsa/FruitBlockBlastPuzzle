@@ -287,78 +287,104 @@ public class BoardManager : MonoBehaviour
         return grid != null;
     }
 
-    public bool TryPlaceShape(List<Vector2Int> shapeCells, Vector2 screenPosition, Sprite blockSprite)
+public bool TryPlaceShape(List<Vector2Int> shapeCells, Vector2 screenPosition, Sprite blockSprite)
+{
+    return TryPlaceShapeWithAnchor(shapeCells, Vector2Int.zero, screenPosition, blockSprite);
+}
+
+public bool TryPlaceShapeWithAnchor(
+    List<Vector2Int> shapeCells,
+    Vector2Int grabbedCellOffset,
+    Vector2 screenPosition,
+    Sprite blockSprite
+)
+{
+    if (isClearing || isGameOver)
     {
-        if (isClearing || isGameOver)
-        {
-            Debug.Log("Cannot place: clearing or game over.");
-            return false;
-        }
-
-        if (grid == null || shapeCells == null)
-        {
-            Debug.Log("Cannot place: grid or shape is null.");
-            return false;
-        }
-
-        GridCell closestCell = null;
-        float closestDistance = float.MaxValue;
-
-        foreach (GridCell cell in grid)
-        {
-            if (cell == null)
-            {
-                continue;
-            }
-
-            RectTransform cellRect = cell.GetComponent<RectTransform>();
-            Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(null, cellRect.position);
-
-            float distance = Vector2.Distance(screenPosition, cellScreenPosition);
-
-            if (distance < closestDistance)
-            {
-                closestDistance = distance;
-                closestCell = cell;
-            }
-        }
-
-        if (closestCell == null)
-        {
-            Debug.Log("Cannot place: no closest cell found.");
-            return false;
-        }
-
-        if (closestDistance > 200f)
-        {
-            Debug.Log("Cannot place: too far from board. Distance = " + closestDistance);
-            return false;
-        }
-
-        int startRow = closestCell.row;
-        int startColumn = closestCell.column;
-
-        if (!CanPlaceShape(shapeCells, startRow, startColumn))
-        {
-            Debug.Log("Cannot place: shape does not fit at row " + startRow + ", col " + startColumn);
-            return false;
-        }
-
-        foreach (Vector2Int part in shapeCells)
-        {
-            int r = startRow + part.y;
-            int c = startColumn + part.x;
-
-            grid[r, c].SetBlock(blockSprite);
-        }
-
-        AddScore(shapeCells.Count * 10);
-        CheckCompletedLines();
-
-        Debug.Log("Placed successfully.");
-        return true;
+        Debug.Log("Cannot place: clearing or game over.");
+        return false;
     }
 
+    if (grid == null || shapeCells == null)
+    {
+        Debug.Log("Cannot place: grid or shape is null.");
+        return false;
+    }
+
+    GridCell targetCell = GetNearestCell(screenPosition);
+
+    if (targetCell == null)
+    {
+        Debug.Log("Cannot place: no valid grid cell under mouse.");
+        return false;
+    }
+
+    int startRow = targetCell.row - grabbedCellOffset.y;
+    int startColumn = targetCell.column - grabbedCellOffset.x;
+
+    if (!CanPlaceShape(shapeCells, startRow, startColumn))
+    {
+        Debug.Log("Cannot place: shape does not fit at row " + startRow + ", col " + startColumn);
+        return false;
+    }
+
+    foreach (Vector2Int part in shapeCells)
+    {
+        int r = startRow + part.y;
+        int c = startColumn + part.x;
+
+        grid[r, c].SetBlock(blockSprite);
+    }
+
+    AddScore(shapeCells.Count * 10);
+    CheckCompletedLines();
+
+    Debug.Log("Placed successfully at row " + startRow + ", col " + startColumn);
+    return true;
+}
+
+private GridCell GetNearestCell(Vector2 screenPosition)
+{
+    if (grid == null)
+    {
+        return null;
+    }
+
+    GridCell nearestCell = null;
+    float nearestDistance = float.MaxValue;
+
+    foreach (GridCell cell in grid)
+    {
+        if (cell == null)
+        {
+            continue;
+        }
+
+        RectTransform cellRect = cell.GetComponent<RectTransform>();
+
+        Vector2 cellScreenPosition = RectTransformUtility.WorldToScreenPoint(
+            null,
+            cellRect.position
+        );
+
+        float distance = Vector2.Distance(screenPosition, cellScreenPosition);
+
+        if (distance < nearestDistance)
+        {
+            nearestDistance = distance;
+            nearestCell = cell;
+        }
+    }
+
+    float allowedDistance = (cellSize + spacing) * 1.3f;
+
+    if (nearestDistance > allowedDistance)
+    {
+        return null;
+    }
+
+    return nearestCell;
+}
     public bool CanPlaceShape(List<Vector2Int> shapeCells, int startRow, int startColumn)
     {
         if (grid == null || shapeCells == null)

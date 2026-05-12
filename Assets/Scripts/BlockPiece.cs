@@ -16,10 +16,22 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private Vector2 originalPosition;
+
     private BoardManager boardManager;
     private PieceSpawner pieceSpawner;
 
     private Image parentImage;
+
+    private Vector2 pointerOffset;
+    private Vector2Int grabbedCellOffset = Vector2Int.zero;
+
+    private List<MiniBlockData> miniBlocks = new List<MiniBlockData>();
+
+    private class MiniBlockData
+    {
+        public Vector2Int cellOffset;
+        public RectTransform rectTransform;
+    }
 
     private void Awake()
     {
@@ -37,7 +49,7 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             parentImage = gameObject.AddComponent<Image>();
         }
 
-        // Invisible clickable area.
+        // Keep the object clickable but visually invisible.
         parentImage.sprite = null;
         parentImage.color = new Color(1f, 1f, 1f, 0f);
         parentImage.raycastTarget = true;
@@ -69,8 +81,15 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         foreach (Vector2Int cell in originalShape)
         {
-            if (cell.x < minX) minX = cell.x;
-            if (cell.y < minY) minY = cell.y;
+            if (cell.x < minX)
+            {
+                minX = cell.x;
+            }
+
+            if (cell.y < minY)
+            {
+                minY = cell.y;
+            }
         }
 
         foreach (Vector2Int cell in originalShape)
@@ -88,6 +107,8 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             Destroy(child.gameObject);
         }
 
+        miniBlocks.Clear();
+
         if (shapeCells == null || shapeCells.Count == 0)
         {
             return;
@@ -98,8 +119,15 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         foreach (Vector2Int cell in shapeCells)
         {
-            if (cell.x > maxX) maxX = cell.x;
-            if (cell.y > maxY) maxY = cell.y;
+            if (cell.x > maxX)
+            {
+                maxX = cell.x;
+            }
+
+            if (cell.y > maxY)
+            {
+                maxY = cell.y;
+            }
         }
 
         float pieceWidth = (maxX + 1) * miniBlockSize;
@@ -129,20 +157,31 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
                 img.preserveAspect = true;
                 img.raycastTarget = false;
             }
+
+            miniBlocks.Add(new MiniBlockData
+            {
+                cellOffset = cell,
+                rectTransform = blockRect
+            });
         }
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
         originalPosition = rectTransform.anchoredPosition;
+
+        pointerOffset = (Vector2)rectTransform.position - eventData.position;
+
+        grabbedCellOffset = FindClosestMiniBlockToPointer(eventData.position);
+
         canvasGroup.blocksRaycasts = false;
         transform.SetAsLastSibling();
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        // Let the fruit follow the mouse exactly.
-        rectTransform.position = eventData.position;
+        // Keep the exact part you grabbed under the mouse.
+        rectTransform.position = eventData.position + pointerOffset;
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -155,8 +194,12 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             return;
         }
 
-        // Use the mouse release point directly.
-        bool placed = boardManager.TryPlaceShape(shapeCells, eventData.position, pieceSprite);
+        bool placed = boardManager.TryPlaceShapeWithAnchor(
+            shapeCells,
+            grabbedCellOffset,
+            eventData.position,
+            pieceSprite
+        );
 
         if (placed)
         {
@@ -171,5 +214,39 @@ public class BlockPiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         {
             rectTransform.anchoredPosition = originalPosition;
         }
+    }
+
+    private Vector2Int FindClosestMiniBlockToPointer(Vector2 pointerScreenPosition)
+    {
+        if (miniBlocks == null || miniBlocks.Count == 0)
+        {
+            return Vector2Int.zero;
+        }
+
+        MiniBlockData closestBlock = miniBlocks[0];
+        float closestDistance = float.MaxValue;
+
+        foreach (MiniBlockData block in miniBlocks)
+        {
+            if (block == null || block.rectTransform == null)
+            {
+                continue;
+            }
+
+            Vector2 blockScreenPosition = RectTransformUtility.WorldToScreenPoint(
+                null,
+                block.rectTransform.position
+            );
+
+            float distance = Vector2.Distance(pointerScreenPosition, blockScreenPosition);
+
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestBlock = block;
+            }
+        }
+
+        return closestBlock.cellOffset;
     }
 }
